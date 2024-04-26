@@ -1,57 +1,51 @@
 import { Dialog, Transition } from "@headlessui/react";
-import { Fragment, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { Fragment, useEffect, useState } from "react";
+import { useParams } from "react-router-dom";
 import { useForm, SubmitHandler } from "react-hook-form";
-import { useProjectsState } from "../../context/projects/context";
-import { useTasksDispatch, useTasksState } from "../../context/task/context";
-import { addTask } from "../../context/task/actions";
-import { TaskDetailsPayload } from "../../context/task/types";
-import { CommentDetailsPayload } from "../../context/comment/types";
 import { useCommentsDispatch } from "../../context/comment/context";
-import { addComment } from "../../context/comment/actions";
+import { addComment, fetchComments } from "../../context/comment/actions";
+import { CommentDetailsPayload } from "../../context/comment/types";
 
 const NewComment = () => {
-  let [isOpen, setIsOpen] = useState(true);
+  let [isOpenNewComment, setIsOpenNewComment] = useState(true);
 
-  let { tasktID } = useParams();
-  let navigate = useNavigate();
-
+  let {projectID,  taskID } = useParams();
+  // let navigate = useNavigate();
+  let userID = JSON.parse(localStorage.getItem("userData")?? "").id;
   // Use react-hook-form to create form submission handler and state.
   const {
     register,
     handleSubmit,
-    formState: { errors },
+    formState: {  },
   } = useForm<CommentDetailsPayload>();
 
-  const taskState = useTasksState();
+  function closeModalNewComment() {
+    setIsOpenNewComment(false);
+    // navigate("../../");
+  }
+
   const commentDispatch = useCommentsDispatch();
   
-
-  // We do some sanity checks to make sure the `projectID` passed is a valid one
-//   const selectedProject = taskState?.tasks.filter(
-//     (task) => `${task.id}` === taskID
-//   )?.[0];
-  // if (!selectedProject) {
-  //   return <>No such Project!</>;
-  // }
-  function closeModal() {
-    setIsOpen(false);
-    navigate("../../");
-  }
-  
   const onSubmit: SubmitHandler<CommentDetailsPayload> = async (data) => {
+    
+    data['owner'] = userID;
+    // data['task_id'] = taskID
+    console.log("Data Load:", data)
     try {
       // Invoke the actual API and create a task.
-    //   addComment(commentDispatch, taskID ?? "", data);
-      closeModal();
+      addComment(commentDispatch, projectID ?? "", taskID ?? "", data);
+      // fetchComments(commentDispatch, projectID ?? "", taskID ?? "");
+      
+
+      closeModalNewComment();
     } catch (error) {
       console.error("Operation failed:", error);
     }
   };
   return (
     <>
-      <Transition appear show={isOpen} as={Fragment}>
-        <Dialog as="div" className="relative z-10" onClose={closeModal}>
+      <Transition appear show={isOpenNewComment} as={Fragment}>
+        <Dialog as="div" className="relative z-10" onClose={closeModalNewComment}>
           <Transition.Child
             as={Fragment}
             enter="ease-out duration-300"
@@ -88,7 +82,7 @@ const NewComment = () => {
                         required
                         placeholder="Enter comment"
                         autoFocus
-                        id="description"
+                        id="commentBox"
                         // Register the comment field
                         {...register('description', { required: true })}
                         className="w-full border rounded-md py-2 px-3 my-4 text-gray-700 leading-tight focus:outline-none focus:border-blue-500 focus:shadow-outline-blue"
@@ -103,7 +97,7 @@ const NewComment = () => {
                         Submit
                       </button>
                       <button
-                        onClick={closeModal}
+                        onClick={closeModalNewComment}
                         className="inline-flex justify-center rounded-md border border-transparent bg-blue-100 px-4 py-2 text-sm font-medium text-blue-900 hover:bg-blue-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
                       >
                         Cancel
